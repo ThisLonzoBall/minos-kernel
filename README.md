@@ -10,7 +10,10 @@ The goal is a kernel that can run its own user programs: virtual memory, a page 
 - [x] Run the kernel in the higher half of memory (`0xFFFFFFFF80000000`)
 - [x] Print text to the serial port and the VGA screen (`kprintf`)
 - [x] Read the memory map GRUB gives us
-- [ ] Interrupts, timer and keyboard (GDT, IDT, PIC, PIT)
+- [x] GDT and TSS (kernel/user segments, separate stack for double faults)
+- [x] IDT with handlers for all 256 vectors, CPU exceptions print the registers
+- [x] PIC remapped, timer ticking at 100Hz (PIT)
+- [x] PS/2 keyboard driver (shift, caps lock, ctrl)
 - [ ] Physical page allocator
 - [ ] Virtual memory (4 level paging)
 - [ ] Processes and a round robin scheduler
@@ -45,7 +48,17 @@ memory map:
   0000000000000000 - 000000000009fbff  usable
   ...
 usable ram: 255 MB
+gdt + tss loaded
+idt loaded
+interrupts on
+timer works, 100 ticks went by in about 1 second
+type something (keyboard or serial):
+>
 ```
+
+Anything you type in the QEMU window (or in the terminal for `make run-nox`) gets echoed back.
+
+To check that exceptions work, add `ud2test` to the end of the `multiboot2` line in `grub.cfg`. The kernel will run a bad instruction on purpose and you should see an "invalid opcode" dump with all the registers.
 
 ## How booting works
 
@@ -63,7 +76,8 @@ kernel/
   main.c         kmain, the C entry point
   kernel.h       shared helpers (kprintf, port io, etc)
   multiboot2.h   structs for reading GRUB's boot info
-  dev/           serial port and VGA text screen
+  arch/          GDT, IDT, interrupt stubs, PIC and timer
+  dev/           serial port, VGA text screen, keyboard
   lib/           printf and string functions
 grub.cfg         GRUB menu entry
 Makefile
