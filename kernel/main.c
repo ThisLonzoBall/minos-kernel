@@ -1,6 +1,7 @@
 #include "kernel.h"
 #include "multiboot2.h"
 #include "arch/arch.h"
+#include "mm/pmm.h"
 
 static const char *cmdline = "";
 
@@ -69,6 +70,9 @@ void kmain(uint32_t magic, uint32_t mbi_phys)
         panic("bad multiboot magic %x", magic);
 
     dump_boot_info(PHYS_TO_VIRT(mbi_phys));
+
+    pmm_init(PHYS_TO_VIRT(mbi_phys), mbi_phys);
+    pmm_self_test();
 
     gdt_init();
     kprintf("gdt + tss loaded\n");
