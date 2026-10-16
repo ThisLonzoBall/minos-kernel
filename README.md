@@ -14,7 +14,7 @@ The goal is a kernel that can run its own user programs: virtual memory, a page 
 - [x] IDT with handlers for all 256 vectors, CPU exceptions print the registers
 - [x] PIC remapped, timer ticking at 100Hz (PIT)
 - [x] PS/2 keyboard driver (shift, caps lock, ctrl)
-- [ ] Physical page allocator
+- [x] Physical page allocator (bitmap, only the first 1GB for now)
 - [ ] Virtual memory (4 level paging)
 - [ ] Processes and a round robin scheduler
 - [ ] System calls
@@ -48,6 +48,8 @@ memory map:
   0000000000000000 - 000000000009fbff  usable
   ...
 usable ram: 255 MB
+pmm: 252 MB free (64xxx pages), kernel ends at ...
+pmm: self test ok (first page was ...)
 gdt + tss loaded
 idt loaded
 interrupts on
@@ -78,6 +80,7 @@ kernel/
   multiboot2.h   structs for reading GRUB's boot info
   arch/          GDT, IDT, interrupt stubs, PIC and timer
   dev/           serial port, VGA text screen, keyboard
+  mm/            memory management (page allocator so far)
   lib/           printf and string functions
 grub.cfg         GRUB menu entry
 Makefile
