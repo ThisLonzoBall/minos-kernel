@@ -2,6 +2,7 @@
 #include "multiboot2.h"
 #include "arch/arch.h"
 #include "mm/pmm.h"
+#include "mm/vmm.h"
 
 static const char *cmdline = "";
 
@@ -71,13 +72,18 @@ void kmain(uint32_t magic, uint32_t mbi_phys)
 
     dump_boot_info(PHYS_TO_VIRT(mbi_phys));
 
-    pmm_init(PHYS_TO_VIRT(mbi_phys), mbi_phys);
-    pmm_self_test();
-
     gdt_init();
     kprintf("gdt + tss loaded\n");
     idt_init();
     kprintf("idt loaded\n");
+
+    // memory. vmm has to come after gdt_init since it removes the low
+    // identity map, and the gdt from boot.S lives down there
+    struct mb2_info *mbi = PHYS_TO_VIRT(mbi_phys);
+    pmm_init(mbi, mbi_phys);
+    vmm_init(mbi);
+    pmm_self_test();
+    vmm_self_test();
     pic_init();
     pit_init();
     kbd_init();

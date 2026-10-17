@@ -8,8 +8,17 @@
 
 #define KERNEL_VMA 0xFFFFFFFF80000000ULL
 
-// for now the first 1GB of ram is mapped at KERNEL_VMA too, so this works for low addresses
-#define PHYS_TO_VIRT(p) ((void *)((uint64_t)(p) + KERNEL_VMA))
+// all of ram gets mapped here once vmm_init runs
+#define DIRECT_MAP_BASE 0xFFFF800000000000ULL
+
+// at boot only the first 1GB is mapped (at KERNEL_VMA). vmm_init switches
+// this over to DIRECT_MAP_BASE so we can reach all of ram
+extern uint64_t phys_map_base;
+#define PHYS_TO_VIRT(p) ((void *)((uint64_t)(p) + phys_map_base))
+#define VIRT_TO_PHYS(v) ((uint64_t)(v) - phys_map_base)
+
+// for addresses inside the kernel image itself (code, globals)
+#define KERNEL_VIRT_TO_PHYS(v) ((uint64_t)(v) - KERNEL_VMA)
 
 #define ALIGN_UP(x, a)   (((x) + (a) - 1) & ~((uint64_t)(a) - 1))
 #define ALIGN_DOWN(x, a) ((x) & ~((uint64_t)(a) - 1))

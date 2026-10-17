@@ -56,4 +56,15 @@ struct mb2_tag_mmap {
 // tags are padded to 8 bytes
 #define MB2_NEXT_TAG(t) ((struct mb2_tag *)((uint8_t *)(t) + (((t)->size + 7) & ~7)))
 
+static inline struct mb2_tag *mb2_find_tag(struct mb2_info *mbi, uint32_t type)
+{
+    for (struct mb2_tag *tag = (struct mb2_tag *)(mbi + 1);
+         tag->type != MB2_TAG_END;
+         tag = MB2_NEXT_TAG(tag)) {
+        if (tag->type == type)
+            return tag;
+    }
+    return 0;
+}
+
 #endif
