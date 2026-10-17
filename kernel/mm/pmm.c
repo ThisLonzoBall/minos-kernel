@@ -3,9 +3,10 @@
 
 // physical page allocator. one bit per 4k page, 1 = used, 0 = free.
 //
-// right now only the first 1GB of ram is mapped (boot.S does that), so we
-// only hand out pages below that. once the vmm maps all of ram this can go up.
-#define MAX_PHYS   (1ULL << 30)
+// handles up to 4GB of ram, that's plenty for qemu. the bitmap is 128KB.
+// careful: until vmm_init runs only the first 1GB is actually mapped,
+// so nothing should touch pages above that before then
+#define MAX_PHYS   (4ULL << 30)
 #define MAX_PAGES  (MAX_PHYS / PAGE_SIZE)
 
 static uint64_t bitmap[MAX_PAGES / 64];
@@ -53,13 +54,7 @@ void pmm_init(struct mb2_info *mbi, uint64_t mbi_phys)
     // start with everything marked used, then free what grub says is usable
     memset(bitmap, 0xFF, sizeof(bitmap));
 
-    struct mb2_tag_mmap *mm = NULL;
-    for (struct mb2_tag *tag = (struct mb2_tag *)(mbi + 1);
-         tag->type != MB2_TAG_END;
-         tag = MB2_NEXT_TAG(tag)) {
-        if (tag->type == MB2_TAG_MMAP)
-            mm = (struct mb2_tag_mmap *)tag;
-    }
+    struct mb2_tag_mmap *mm = (struct mb2_tag_mmap *)mb2_find_tag(mbi, MB2_TAG_MMAP);
     if (!mm)
         panic("pmm: grub didn't give us a memory map");
 
