@@ -14,8 +14,9 @@ The goal is a kernel that can run its own user programs: virtual memory, a page 
 - [x] IDT with handlers for all 256 vectors, CPU exceptions print the registers
 - [x] PIC remapped, timer ticking at 100Hz (PIT)
 - [x] PS/2 keyboard driver (shift, caps lock, ctrl)
-- [x] Physical page allocator (bitmap, only the first 1GB for now)
-- [ ] Virtual memory (4 level paging)
+- [x] Physical page allocator (bitmap, up to 4GB)
+- [x] Page table functions (map, unmap, translate) and all of RAM mapped at `0xFFFF800000000000`
+- [ ] Kernel heap (kmalloc) and separate address spaces for processes
 - [ ] Processes and a round robin scheduler
 - [ ] System calls
 - [ ] User programs and a shell
@@ -48,10 +49,12 @@ memory map:
   0000000000000000 - 000000000009fbff  usable
   ...
 usable ram: 255 MB
-pmm: 252 MB free (64xxx pages), kernel ends at ...
-pmm: self test ok (first page was ...)
 gdt + tss loaded
 idt loaded
+pmm: 252 MB free (64xxx pages), kernel ends at ...
+vmm: mapped 256 MB of ram at ffff800000000000, identity map removed
+pmm: self test ok (first page was ...)
+vmm: self test ok
 interrupts on
 timer works, 100 ticks went by in about 1 second
 type something (keyboard or serial):
@@ -68,6 +71,15 @@ To check that exceptions work, add `ud2test` to the end of the `multiboot2` line
 2. `boot.S` makes some temporary page tables. They map the first 1GB of RAM twice, once at address 0 and once up at `0xFFFFFFFF80000000`.
 3. It turns on paging and long mode, then jumps up to the higher half.
 4. `kmain` in `kernel/main.c` sets up the serial port and screen and prints stuff.
+5. Later the vmm maps all of RAM at `0xFFFF800000000000` and throws away the low identity map.
+
+## Memory layout
+
+| Virtual address        | What's there                              |
+|------------------------|-------------------------------------------|
+| `0x0000000000000000`   | nothing yet (user programs will go here)  |
+| `0xFFFF800000000000`   | all of physical RAM (the "direct map")    |
+| `0xFFFFFFFF80000000`   | the kernel (first 1GB of RAM mapped here) |
 
 ## Project layout
 
@@ -80,7 +92,7 @@ kernel/
   multiboot2.h   structs for reading GRUB's boot info
   arch/          GDT, IDT, interrupt stubs, PIC and timer
   dev/           serial port, VGA text screen, keyboard
-  mm/            memory management (page allocator so far)
+  mm/            memory management (page allocator, page tables)
   lib/           printf and string functions
 grub.cfg         GRUB menu entry
 Makefile
