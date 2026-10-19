@@ -3,6 +3,7 @@
 #include "arch/arch.h"
 #include "mm/pmm.h"
 #include "mm/vmm.h"
+#include "mm/kheap.h"
 
 static const char *cmdline = "";
 
@@ -84,6 +85,12 @@ void kmain(uint32_t magic, uint32_t mbi_phys)
     vmm_init(mbi);
     pmm_self_test();
     vmm_self_test();
+
+    // quick heap check
+    char *a = kmalloc(100);
+    char *b = kmalloc(8000);   // bigger than a page
+    memset(b, 'x', 8000);
+    kprintf("kheap: kmalloc gave %p and %p\n", a, b);
     pic_init();
     pit_init();
     kbd_init();
